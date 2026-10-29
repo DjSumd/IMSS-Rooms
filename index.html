@@ -1,0 +1,696 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>IMSS Rooms</title>
+<meta name="theme-color" content="#2a2523">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#f4efe6; --paper:#fffdf8; --ink:#2a2523; --muted:#7a6f66; --line:#ddd3c4; --soft:#eee6d9;
+  --oxblood:#6e1f24; --brass:#a8823a; --charcoal:#2a2523; --clash:#c0392b;
+  --serif:"Cormorant Garamond",Georgia,serif; --sans:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+}
+@media (prefers-color-scheme: dark){
+  :root{--bg:#1b1817; --paper:#252120; --ink:#efe7dc; --muted:#a69b90; --line:#3b3532; --soft:#2e2926; --clash:#e2655a;}
+}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;-webkit-tap-highlight-color:transparent;padding-bottom:env(safe-area-inset-bottom)}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+
+.bar{position:sticky;top:0;z-index:30;background:var(--charcoal);color:#efe7dc;padding:10px 16px;padding-top:calc(10px + env(safe-area-inset-top));display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.brand{font-family:var(--serif);font-size:22px;font-weight:600;letter-spacing:.02em}
+.brand b{color:#d1ad66;font-weight:600}
+.occ{flex:1 1 200px;min-width:0;display:flex;gap:6px}
+.occ select{flex:1;min-width:0;background:#3a3330;border:1px solid #4d4542;color:#efe7dc;border-radius:8px;padding:8px 10px}
+.tools{display:flex;gap:6px;flex-wrap:wrap}
+.btn{background:#3a3330;border:1px solid #4d4542;color:#efe7dc;border-radius:8px;padding:8px 11px;font-size:13px;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:#d1ad66}
+.btn.gold{background:#a8823a;border-color:#a8823a;color:#1b1817}
+.btn:disabled{opacity:.4;cursor:default}
+
+main{max-width:1500px;margin:0 auto;padding:18px 16px 60px}
+.head{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.titles{flex:1;min-width:220px}
+.titles input{display:block;width:100%;background:transparent;border:0;border-bottom:1px dashed transparent;padding:2px 0;outline:none}
+.titles input:focus,.titles input:hover{border-bottom-color:var(--line)}
+#ttTitle{font-family:var(--serif);font-size:32px;font-weight:600}
+#ttSub{font-size:14px;color:var(--muted);margin-top:2px}
+
+.tabs{display:flex;gap:6px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+.tab{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 12px;font-weight:600;font-size:13px}
+.tab.on{background:var(--oxblood);color:#fff;border-color:var(--oxblood)}
+.tabs .sp{flex:1}
+.clashbar{display:none;background:#fbe9e7;color:#8a2a20;border:1px solid #f0c4be;border-radius:10px;padding:9px 12px;margin-bottom:12px;font-size:13px}
+@media (prefers-color-scheme: dark){.clashbar{background:#3a2220;color:#f2b8b1;border-color:#5a2e2a}}
+.clashbar.show{display:block}
+.clashbar b{font-weight:600}
+.clashbar button{background:none;border:0;color:inherit;text-decoration:underline;padding:0;margin-left:6px}
+.daytabs{display:flex;gap:6px;margin-bottom:12px}
+.daytabs button{flex:1;background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:8px 4px;font-weight:600;font-size:13px}
+.daytabs button.on{background:var(--charcoal);color:#efe7dc;border-color:var(--charcoal)}
+
+/* Week: rooms x days */
+.wrap{overflow-x:auto;border-radius:12px;border:1px solid var(--line);background:var(--paper)}
+table.wk{border-collapse:collapse;width:100%;min-width:980px;table-layout:fixed}
+.wk th,.wk td{border:1px solid var(--line);vertical-align:top}
+.wk thead th{background:var(--charcoal);color:#efe7dc;font-family:var(--serif);font-size:19px;font-weight:600;padding:8px 6px;border-color:#3a3330;cursor:pointer}
+.wk thead th:first-child{width:150px;cursor:default}
+.wk tbody th{text-align:left;padding:8px 10px;background:var(--bg);cursor:pointer;font-weight:600}
+.wk tbody th small{display:block;color:var(--muted);font-weight:400;font-size:11px}
+.wk tbody th:hover{color:var(--brass)}
+.wk td{padding:4px;cursor:copy}
+.wk td:hover{background:rgba(168,130,58,.06)}
+.wk td .add{display:block;text-align:center;color:var(--muted);opacity:0;font-size:16px;line-height:22px}
+.wk td:hover .add{opacity:.6}
+
+.chip{display:block;width:100%;text-align:left;border:0;border-left:4px solid var(--tc);background:color-mix(in srgb,var(--tc) 14%,var(--paper));border-radius:6px;padding:4px 7px;margin-bottom:4px;cursor:pointer}
+.chip .tm{font-size:11.5px;font-weight:600;color:var(--muted)}
+.chip .who{font-weight:600;font-size:13px;line-height:1.2}
+.chip .ins{font-size:11.5px;color:var(--muted)}
+.chip .nt{font-size:11px;color:var(--muted);font-style:italic}
+.chip.clash{box-shadow:0 0 0 2px var(--clash) inset}
+.chip.clash .tm::after{content:" clash";color:var(--clash);font-weight:600}
+.chip.dim{opacity:.28}
+
+/* Phone week list */
+.wklist{display:none}
+.rcard{background:var(--paper);border:1px solid var(--line);border-radius:10px;margin-bottom:8px;overflow:hidden}
+.rcard h3{margin:0;padding:9px 12px;font-size:14px;font-weight:600;background:var(--soft);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
+.rcard h3 span{font-weight:400;color:var(--muted);font-size:12px}
+.rcard .body{padding:6px}
+.rcard .free{color:var(--muted);font-size:12px;padding:4px 6px}
+.rcard .addline{display:block;width:100%;background:none;border:1px dashed var(--line);border-radius:6px;padding:6px;color:var(--muted);font-size:12px}
+
+/* Day grid */
+.dg{display:grid;position:relative}
+.dg .hcell{position:sticky;top:0;z-index:5;background:var(--charcoal);color:#efe7dc;font-weight:600;font-size:12.5px;padding:8px 4px;text-align:center;border-right:1px solid #3a3330;cursor:pointer;line-height:1.2}
+.dg .hcell.tcol{position:sticky;left:0;z-index:6}
+.dg .tcol{position:sticky;left:0;z-index:4;background:var(--bg);border-right:1px solid var(--line)}
+.dg .tlabel{position:absolute;left:6px;font-size:11px;color:var(--muted);transform:translateY(-50%)}
+.dg .hcell.tcol{background:var(--charcoal);border-right-color:#3a3330}
+.dg .col{position:relative;border-right:1px solid var(--line);cursor:copy}
+.dg .hl{position:absolute;left:0;right:0;border-top:1px solid var(--line)}
+.dg .hl.half{border-top-style:dashed;opacity:.6}
+.dg .blk{display:flex;flex-direction:column;justify-content:flex-start;position:absolute;left:3px;right:3px;border-radius:6px;border:0;border-left:4px solid var(--tc);background:color-mix(in srgb,var(--tc) 18%,var(--paper));padding:3px 6px;text-align:left;overflow:hidden;cursor:pointer;font-size:12px;line-height:1.2}
+.dg .blk b{display:block;font-weight:600;font-size:12.5px}
+.dg .blk span{color:var(--muted);font-size:11px}
+.dg .blk.clash{box-shadow:0 0 0 2px var(--clash) inset}
+
+/* Teachers */
+.tgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(270px,1fr));gap:10px}
+.tcard{background:var(--paper);border:1px solid var(--line);border-left:5px solid var(--tc);border-radius:10px;padding:10px 12px}
+.tcard h3{margin:0;font-size:15px;font-weight:600;display:flex;justify-content:space-between;gap:8px;cursor:pointer}
+.tcard h3 small{font-weight:500;color:var(--muted);font-size:12px;white-space:nowrap}
+.tcard .ins{color:var(--muted);font-size:12px;margin-bottom:6px}
+.tcard .ln{display:flex;gap:8px;font-size:13px;padding:4px 0;border-top:1px solid var(--soft);cursor:pointer}
+.tcard .ln .d{width:34px;font-weight:600;color:var(--muted)}
+.tcard .ln .t{width:96px}
+.tcard .ln.clash .t{color:var(--clash);font-weight:600}
+.tcard .none{font-size:12px;color:var(--muted);padding:4px 0}
+.tcard .addline{margin-top:6px;display:block;width:100%;background:none;border:1px dashed var(--line);border-radius:6px;padding:6px;color:var(--muted);font-size:12px}
+
+.filter{background:var(--paper);border:1px solid var(--line);border-radius:8px;padding:7px 9px;font-size:13px;max-width:200px}
+.foot{margin-top:14px;font-size:12px;color:var(--muted);display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.empty-state{background:var(--paper);border:1px dashed var(--line);border-radius:12px;padding:22px;text-align:center;color:var(--muted)}
+.empty-state b{color:var(--ink)}
+
+/* Sheets */
+.scrim{position:fixed;inset:0;background:rgba(20,16,15,.55);display:none;align-items:flex-end;justify-content:center;z-index:50}
+.scrim.open{display:flex}
+@media (min-width:640px){.scrim{align-items:center}}
+.sheet{background:var(--paper);width:100%;max-width:500px;border-radius:16px 16px 0 0;padding:18px 18px calc(18px + env(safe-area-inset-bottom));max-height:92vh;overflow:auto;box-shadow:0 10px 40px rgba(0,0,0,.3)}
+@media (min-width:640px){.sheet{border-radius:16px}}
+.sheet h2{font-family:var(--serif);font-size:24px;font-weight:600;margin:0 0 2px}
+.sheet .where{color:var(--muted);font-size:13px;margin-bottom:14px}
+.f{display:block;margin-bottom:10px}
+.f>span{display:block;font-size:11px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}
+.f input,.f select,.f textarea{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 10px;outline:none}
+.f input:focus,.f select:focus{border-color:var(--brass)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.days{display:flex;gap:6px;flex-wrap:wrap}
+.days label{flex:1;min-width:52px}
+.days input{display:none}
+.days span{display:block;text-align:center;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:600;font-size:13px}
+.days input:checked+span{background:var(--oxblood);border-color:var(--oxblood);color:#fff}
+.row-btns{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sbtn{background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px 12px;font-weight:500;font-size:13px}
+.sbtn.primary{background:var(--oxblood);border-color:var(--oxblood);color:#fff;margin-left:auto}
+.sbtn.danger{color:var(--oxblood)}
+.sbtn:disabled{opacity:.4}
+.warn{background:#fbe9e7;color:#8a2a20;border-radius:8px;padding:8px 10px;font-size:12.5px;margin-top:4px;display:none}
+.warn.show{display:block}
+.list{margin:6px 0 0;padding:0;list-style:none}
+.list li{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid var(--line)}
+.list li .nm{flex:1;min-width:0}
+.list li .nm b{display:block;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.list li .nm small{color:var(--muted)}
+.list li.cur .nm b{color:var(--oxblood)}
+.sw{width:16px;height:16px;border-radius:4px;flex:none}
+.swatches{display:flex;gap:6px;flex-wrap:wrap}
+.swatches button{width:30px;height:30px;border-radius:8px;border:2px solid transparent}
+.swatches button.on{border-color:var(--ink)}
+.toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:var(--charcoal);color:#efe7dc;padding:10px 16px;border-radius:999px;font-size:13px;opacity:0;transition:opacity .2s;pointer-events:none;z-index:60}
+.toast.show{opacity:1}
+
+@media (max-width:760px){
+  #ttTitle{font-size:21px}
+  .brand{font-size:20px}
+  .bar .btn.opt{display:none}
+  body.v-week .wrap.week{display:none}
+  body.v-week .wklist{display:block}
+}
+@media (min-width:761px){ body.v-week .daytabs{display:none} }
+
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  *{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  :root{--bg:#fff;--paper:#fff;--ink:#111;--muted:#555;--line:#999;--soft:#eee}
+  body{background:#fff;font-size:10px}
+  .bar,.tabs,.daytabs,.clashbar,.scrim,.toast,.foot .hint,#saved,.add,.addline,.wklist{display:none!important}
+  #ttSub:placeholder-shown{display:none}
+  main{padding:0;max-width:none}
+  .wrap{border:0;overflow:visible}
+  .wrap.week{display:block!important}
+  table.wk{min-width:0}
+  .wk thead th{background:#2a2523!important;color:#fff!important;font-size:14px;padding:4px}
+  .wk thead th:first-child{width:110px}
+  .wk tbody th{background:#f4efe6!important;padding:4px 6px;font-size:11px}
+  .wk td{padding:2px}
+  .chip{padding:2px 5px;margin-bottom:2px;break-inside:avoid}
+  .chip .who{font-size:10.5px}
+  .chip .tm,.chip .ins,.chip .nt{font-size:9.5px}
+  #ttTitle{font-size:22px}
+  .titles input{border:0!important}
+  body.v-teachers .tgrid{grid-template-columns:repeat(3,1fr)}
+  .tcard{break-inside:avoid}
+}
+</style>
+</head>
+<body class="v-week">
+
+<header class="bar">
+  <div class="brand">IMSS <b>Rooms</b></div>
+  <div class="occ">
+    <select id="occSel" aria-label="Occasion"></select>
+    <button class="btn" id="occBtn">Occasions</button>
+  </div>
+  <div class="tools">
+    <button class="btn gold" id="addBtn">+ Booking</button>
+    <button class="btn" id="undoBtn" disabled>Undo</button>
+    <button class="btn opt" id="printBtn">Print</button>
+    <button class="btn" id="moreBtn">More</button>
+  </div>
+</header>
+
+<main>
+  <div class="head">
+    <div class="titles">
+      <input id="ttTitle" aria-label="Title" placeholder="Title">
+      <input id="ttSub" aria-label="Subtitle" placeholder="Term, dates or notes">
+    </div>
+  </div>
+
+  <div class="tabs">
+    <button class="tab" data-view="week">Week</button>
+    <button class="tab" data-view="day">Day by time</button>
+    <button class="tab" data-view="teachers">Teachers</button>
+    <span class="sp"></span>
+    <select class="filter" id="tFilter" aria-label="Highlight a teacher"></select>
+  </div>
+  <div class="clashbar" id="clashbar"></div>
+  <div class="daytabs" id="daytabs"></div>
+  <div id="view"></div>
+
+  <div class="foot">
+    <span class="hint" id="hint"></span>
+    <span id="saved"></span>
+  </div>
+</main>
+
+<div class="scrim" id="scrim"><div class="sheet" id="sheet" role="dialog" aria-modal="true"></div></div>
+<div class="toast" id="toast"></div>
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+
+<script>
+(function(){
+"use strict";
+const KEY="imss-rooms-v1";
+const PALETTE=["#6e1f24","#a8823a","#3d4a52","#5f7154","#7b5a7e","#2f6f73","#b5652d","#8a3f5f","#4f5d8a","#7a6a3a","#3f7d4f","#9a4c3b","#5a4a42","#2c5a7a","#a35b8c","#6b7a2e"];
+const DEFAULT_ROOMS=["M1.1","M1.2","M1.3","E1.2","PR1","PR3","DH1","DH2","P Building Foyer","Languages Building Foyer","Tricycle Theatre","Tricycle Greenroom"];
+const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
+
+function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
+function seed(){
+  return {id:uid(),name:"Weekly IMSS rooms",title:"IMSS Teachers: Music Department Rooms",sub:"",
+    days:DAYS.slice(),rooms:DEFAULT_ROOMS.map(n=>({id:uid(),name:n})),teachers:[],blocks:[],updated:Date.now()};
+}
+
+let state=load(), undoStack=[], view=localGet("imss-view")||"week", dayIdx=defaultDay(), focusT="";
+function localGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
+function localSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
+function load(){
+  try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&Array.isArray(s.versions)&&s.versions.length) return s;}}catch(e){}
+  const v=seed(); return {versions:[v],current:v.id};
+}
+function save(){
+  cur().updated=Date.now();
+  try{localStorage.setItem(KEY,JSON.stringify(state)); setSaved("Saved");}catch(e){setSaved("Could not save on this device");}
+}
+function setSaved(t){document.getElementById("saved").textContent=t+" "+new Date().toLocaleTimeString("en-AU",{hour:"numeric",minute:"2-digit"});}
+function cur(){return state.versions.find(v=>v.id===state.current)||state.versions[0];}
+function snapshot(){undoStack.push(JSON.stringify(state)); if(undoStack.length>40) undoStack.shift(); document.getElementById("undoBtn").disabled=false;}
+function change(fn){snapshot(); fn(); save(); render();}
+function undo(){if(!undoStack.length) return; state=JSON.parse(undoStack.pop()); localSet(KEY,JSON.stringify(state)); render(); toast("Undone"); document.getElementById("undoBtn").disabled=!undoStack.length;}
+function defaultDay(){const d=new Date().getDay(); return (d>=1&&d<=5)?d-1:0;}
+
+/* ---------- time helpers ---------- */
+function toMin(t){if(!t) return null; const [h,m]=t.split(":").map(Number); return h*60+(m||0);}
+function toHHMM(m){m=Math.max(0,Math.min(24*60-1,m)); return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");}
+function fmt(t){const m=toMin(t); if(m==null) return ""; let h=Math.floor(m/60), mm=m%60; const h12=((h+11)%12)+1; return h12+":"+String(mm).padStart(2,"0");}
+function fmtRange(b){return fmt(b.start)+"–"+fmt(b.end);}
+function hours(min){const h=min/60; return (Math.round(h*4)/4).toString().replace(/\.0$/,"")+" h";}
+
+/* ---------- lookups ---------- */
+function teacher(id){return cur().teachers.find(t=>t.id===id);}
+function room(id){return cur().rooms.find(r=>r.id===id);}
+function tColor(id){const t=teacher(id); return t?t.color:"#9a8f84";}
+function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));}
+function toast(t){const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),1900);}
+function sortBlocks(a,b){return toMin(a.start)-toMin(b.start)||toMin(a.end)-toMin(b.end);}
+
+/* ---------- clashes: same room overlap, or same teacher in two places ---------- */
+function computeClashes(v){
+  const map=new Map(), list=[];
+  const bs=v.blocks;
+  for(let i=0;i<bs.length;i++) for(let j=i+1;j<bs.length;j++){
+    const a=bs[i], b=bs[j]; if(a.day!==b.day) continue;
+    const ov=toMin(a.start)<toMin(b.end)&&toMin(b.start)<toMin(a.end); if(!ov) continue;
+    let kind=null;
+    if(a.room===b.room) kind="room"; else if(a.t&&a.t===b.t) kind="teacher";
+    if(!kind) continue;
+    map.set(a.id,true); map.set(b.id,true); list.push({a,b,kind});
+  }
+  return {map,list};
+}
+let clashes={map:new Map(),list:[]};
+
+/* ---------- render ---------- */
+function render(){
+  const v=cur(); clashes=computeClashes(v);
+  document.body.className="v-"+view;
+  document.getElementById("occSel").innerHTML=state.versions.map(x=>'<option value="'+x.id+'"'+(x.id===v.id?" selected":"")+'>'+esc(x.name)+'</option>').join("");
+  const ti=document.getElementById("ttTitle"), su=document.getElementById("ttSub");
+  if(document.activeElement!==ti) ti.value=v.title||"";
+  if(document.activeElement!==su) su.value=v.sub||"";
+  document.title=v.title||"IMSS Rooms";
+  document.querySelectorAll(".tab").forEach(b=>b.classList.toggle("on",b.dataset.view===view));
+  const tf=document.getElementById("tFilter");
+  if(focusT&&!teacher(focusT)) focusT="";
+  tf.innerHTML='<option value="">Highlight a teacher</option>'+v.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<option value="'+t.id+'"'+(t.id===focusT?" selected":"")+'>'+esc(t.name)+'</option>').join("");
+  tf.style.display=(view==="teachers"||!v.teachers.length)?"none":"";
+  // clash bar
+  const cb=document.getElementById("clashbar");
+  if(clashes.list.length){
+    const first=clashes.list.slice(0,3).map(c=>{
+      const d=v.days[c.a.day]||"", tA=teacher(c.a.t), tB=teacher(c.b.t);
+      return c.kind==="room"
+        ? d+" "+esc(room(c.a.room)?.name||"")+": "+esc(tA?.name||"?")+" and "+esc(tB?.name||"?")
+        : d+": "+esc(tA?.name||"?")+" is in "+esc(room(c.a.room)?.name||"")+" and "+esc(room(c.b.room)?.name||"");
+    }).join("; ");
+    cb.innerHTML='<b>'+clashes.list.length+' clash'+(clashes.list.length>1?"es":"")+'</b>. '+first+(clashes.list.length>3?"; and more.":".");
+    cb.classList.add("show");
+  } else cb.classList.remove("show");
+  // day tabs
+  if(dayIdx>=v.days.length) dayIdx=0;
+  document.getElementById("daytabs").innerHTML=view==="teachers"?"":v.days.map((d,i)=>'<button data-dayi="'+i+'" class="'+(i===dayIdx?"on":"")+'">'+esc(d.slice(0,3))+'</button>').join("");
+  const hint=document.getElementById("hint");
+  const el=document.getElementById("view");
+  if(!v.teachers.length&&!v.blocks.length){
+    el.innerHTML='<div class="empty-state"><b>Start by adding your IMSS teachers.</b><br>Then tap any room on any day to record when they are in it.<div class="row-btns" style="justify-content:center"><button class="sbtn primary" style="margin-left:0" id="esAdd">Add teachers</button></div></div>'+(view==="week"?weekHTML(v):"");
+    document.getElementById("esAdd").onclick=()=>manageTeachers(true);
+  } else {
+    el.innerHTML=view==="week"?weekHTML(v):view==="day"?dayHTML(v):teachersHTML(v);
+  }
+  hint.textContent=view==="week"?"Tap an empty spot to add a booking for that room and day. Tap a booking to change it. Tap a room or day heading to edit it."
+    :view==="day"?"Tap a column to add a booking at that time. Scroll sideways for all rooms."
+    :"Tap a teacher to edit their name, instrument or colour. Tap a line to change that booking.";
+}
+
+function chip(b){
+  const t=teacher(b.t), cl=clashes.map.has(b.id), dim=focusT&&b.t!==focusT;
+  const showRoom=view==="teachers";
+  return '<button class="chip'+(cl?" clash":"")+(dim?" dim":"")+'" data-b="'+b.id+'" style="--tc:'+tColor(b.t)+'">'+
+    '<div class="tm">'+fmtRange(b)+'</div><div class="who">'+esc(t?t.name:"No teacher")+'</div>'+
+    (t&&t.inst?'<div class="ins">'+esc(t.inst)+'</div>':"")+(b.note?'<div class="nt">'+esc(b.note)+'</div>':"")+(showRoom?esc(room(b.room)?.name||""):"")+'</button>';
+}
+function weekHTML(v){
+  let h='<div class="wrap week"><table class="wk"><thead><tr><th>Room</th>'+v.days.map((d,i)=>'<th data-day="'+i+'">'+esc(d)+'</th>').join("")+'</tr></thead><tbody>';
+  v.rooms.forEach(r=>{
+    const mins=v.blocks.filter(b=>b.room===r.id).reduce((s,b)=>s+Math.max(0,toMin(b.end)-toMin(b.start)),0);
+    h+='<tr><th data-room="'+r.id+'">'+esc(r.name)+(mins?'<small>'+hours(mins)+' booked</small>':'<small>free all week</small>')+'</th>';
+    v.days.forEach((_,d)=>{
+      const bs=v.blocks.filter(b=>b.room===r.id&&b.day===d).sort(sortBlocks);
+      h+='<td data-cr="'+r.id+'" data-cd="'+d+'">'+bs.map(chip).join("")+'<span class="add">+</span></td>';
+    });
+    h+='</tr>';
+  });
+  h+='</tbody></table></div>';
+  // phone list for selected day
+  h+='<div class="wklist">'+v.rooms.map(r=>{
+    const bs=v.blocks.filter(b=>b.room===r.id&&b.day===dayIdx).sort(sortBlocks);
+    return '<div class="rcard"><h3 data-room="'+r.id+'">'+esc(r.name)+'<span>'+(bs.length?bs.length+" booking"+(bs.length>1?"s":""):"free")+'</span></h3><div class="body">'+
+      bs.map(chip).join("")+'<button class="addline" data-cr="'+r.id+'" data-cd="'+dayIdx+'">+ Add to '+esc(r.name)+'</button></div></div>';
+  }).join("")+'</div>';
+  return h;
+}
+function dayHTML(v){
+  const bs=v.blocks.filter(b=>b.day===dayIdx);
+  let lo=7*60+30, hi=16*60+30;
+  bs.forEach(b=>{lo=Math.min(lo,toMin(b.start)); hi=Math.max(hi,toMin(b.end));});
+  lo=Math.floor(lo/30)*30; hi=Math.ceil(hi/30)*30;
+  const PPM=1.3, H=(hi-lo)*PPM;
+  const cols='64px repeat('+v.rooms.length+',minmax(112px,1fr))';
+  let h='<div class="wrap" style="max-height:78vh;overflow:auto"><div class="dg" style="grid-template-columns:'+cols+';min-width:'+(64+v.rooms.length*112)+'px">';
+  h+='<div class="hcell tcol">'+esc(v.days[dayIdx].slice(0,3))+'</div>'+v.rooms.map(r=>'<div class="hcell" data-room="'+r.id+'">'+esc(r.name)+'</div>').join("");
+  let lines="", labels="";
+  for(let m=lo;m<=hi;m+=30){
+    const y=(m-lo)*PPM;
+    lines+='<div class="hl'+(m%60?" half":"")+'" style="top:'+y+'px"></div>';
+    if(m%60===0||m===lo) labels+='<div class="tlabel" style="top:'+Math.max(7,y)+'px">'+fmt(toHHMM(m))+'</div>';
+  }
+  h+='<div class="tcol" style="height:'+H+'px;position:sticky;left:0">'+labels+'</div>';
+  v.rooms.forEach(r=>{
+    h+='<div class="col" data-col="'+r.id+'" data-lo="'+lo+'" style="height:'+H+'px">'+lines+
+      bs.filter(b=>b.room===r.id).map(b=>{
+        const t=teacher(b.t), top=(toMin(b.start)-lo)*PPM, ht=Math.max(18,(toMin(b.end)-toMin(b.start))*PPM-2);
+        const dim=focusT&&b.t!==focusT?";opacity:.28":"";
+        return '<button class="blk'+(clashes.map.has(b.id)?" clash":"")+'" data-b="'+b.id+'" style="top:'+top+'px;height:'+ht+'px;--tc:'+tColor(b.t)+dim+'"><b>'+esc(t?t.name:"No teacher")+'</b><span>'+fmtRange(b)+(t&&t.inst?" · "+esc(t.inst):"")+'</span></button>';
+      }).join("")+'</div>';
+  });
+  return h+'</div></div>';
+}
+function teachersHTML(v){
+  if(!v.teachers.length) return '<div class="empty-state">No teachers yet.</div>';
+  const ts=v.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name));
+  return '<div class="row-btns" style="margin:0 0 10px"><button class="sbtn" id="tManage">Manage teachers</button></div><div class="tgrid">'+ts.map(t=>{
+    const bs=v.blocks.filter(b=>b.t===t.id).sort((a,b)=>a.day-b.day||sortBlocks(a,b));
+    const mins=bs.reduce((s,b)=>s+Math.max(0,toMin(b.end)-toMin(b.start)),0);
+    return '<div class="tcard" style="--tc:'+t.color+'"><h3 data-teacher="'+t.id+'">'+esc(t.name)+'<small>'+(mins?hours(mins)+" a week":"")+'</small></h3><div class="ins">'+esc(t.inst||"")+'</div>'+
+      (bs.length?bs.map(b=>'<div class="ln'+(clashes.map.has(b.id)?" clash":"")+'" data-b="'+b.id+'"><span class="d">'+esc((v.days[b.day]||"").slice(0,3))+'</span><span class="t">'+fmtRange(b)+'</span><span>'+esc(room(b.room)?.name||"")+(b.note?" <i style=\"color:var(--muted)\">"+esc(b.note)+"</i>":"")+'</span></div>').join(""):'<div class="none">No rooms booked</div>')+
+      '<button class="addline" data-addt="'+t.id+'">+ Add a booking for '+esc(t.name.split(" ")[0])+'</button></div>';
+  }).join("")+'</div>';
+}
+
+/* ---------- sheets ---------- */
+const scrim=document.getElementById("scrim"), sheet=document.getElementById("sheet");
+function openSheet(html,bind){sheet.innerHTML=html; scrim.classList.add("open"); bind&&bind(sheet); const f=sheet.querySelector("[autofocus]"); if(f&&matchMedia("(min-width:640px)").matches) f.focus();}
+function closeSheet(){scrim.classList.remove("open"); sheet.innerHTML="";}
+scrim.addEventListener("click",e=>{if(e.target===scrim) closeSheet();});
+document.addEventListener("keydown",e=>{
+  if(e.key==="Escape"&&scrim.classList.contains("open")) closeSheet();
+  if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==="z"&&!scrim.classList.contains("open")&&!/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName)){e.preventDefault(); undo();}
+});
+function enterSubmits(s,btn){s.querySelectorAll("input").forEach(i=>i.addEventListener("keydown",e=>{if(e.key==="Enter"){e.preventDefault(); s.querySelector(btn).click();}}));}
+
+let lastTimes={start:"08:30",end:"12:30"};
+function editBlock(id,pre){
+  const v=cur(); const b=id?v.blocks.find(x=>x.id===id):null;
+  const d=b?{...b}:{id:null,t:(pre&&pre.t)||v._lastT||"",room:(pre&&pre.room)||v.rooms[0]?.id,day:(pre&&pre.day!=null)?pre.day:dayIdx,start:(pre&&pre.start)||lastTimes.start,end:(pre&&pre.end)||lastTimes.end,note:""};
+  const tOpts='<option value="">Choose a teacher</option>'+v.teachers.slice().sort((a,c)=>a.name.localeCompare(c.name)).map(t=>'<option value="'+t.id+'"'+(t.id===d.t?" selected":"")+'>'+esc(t.name)+(t.inst?" ("+esc(t.inst)+")":"")+'</option>').join("")+'<option value="__new">+ New teacher</option>';
+  const rOpts=v.rooms.map(r=>'<option value="'+r.id+'"'+(r.id===d.room?" selected":"")+'>'+esc(r.name)+'</option>').join("");
+  const dayBoxes=v.days.map((dn,i)=>'<label><input type="checkbox" value="'+i+'"'+(i===d.day?" checked":"")+'><span>'+esc(dn.slice(0,3))+'</span></label>').join("");
+  openSheet(
+    '<h2>'+(b?"Edit booking":"New booking")+'</h2><div class="where">'+(b?esc(v.days[b.day])+" · "+esc(room(b.room)?.name||""):"Pick more than one day to book the same slot across the week")+'</div>'+
+    '<label class="f"><span>Teacher</span><select id="bT">'+tOpts+'</select></label>'+
+    '<div id="newT" style="display:none" class="two"><label class="f"><span>New teacher name</span><input id="nTn" placeholder="Full name"></label><label class="f"><span>Instrument</span><input id="nTi" placeholder="Violin, Brass, Percussion"></label></div>'+
+    '<label class="f"><span>Room</span><select id="bR">'+rOpts+'</select></label>'+
+    '<div class="f"><span>'+(b?"Day":"Days")+'</span><div class="days" id="bD">'+dayBoxes+'</div></div>'+
+    '<div class="two"><label class="f"><span>From</span><input type="time" id="bS" step="300" value="'+d.start+'"></label><label class="f"><span>To</span><input type="time" id="bE" step="300" value="'+d.end+'"></label></div>'+
+    '<label class="f"><span>Note</span><input id="bN" value="'+esc(d.note)+'" placeholder="Optional, e.g. ensemble rehearsal, Week A only"></label>'+
+    '<div class="warn" id="bW"></div>'+
+    '<div class="row-btns">'+(b?'<button class="sbtn danger" id="bDel">Delete</button><button class="sbtn" id="bDup">Duplicate</button>':'<button class="sbtn" id="bCancel">Cancel</button>')+'<button class="sbtn primary" id="bSave">Save</button></div>',
+    s=>{
+      const tSel=s.querySelector("#bT"), newT=s.querySelector("#newT");
+      const sync=()=>{newT.style.display=tSel.value==="__new"?"grid":"none"; check();};
+      tSel.onchange=sync;
+      const boxes=[...s.querySelectorAll("#bD input")];
+      if(b) boxes.forEach(x=>x.onchange=()=>{if(x.checked) boxes.forEach(y=>{if(y!==x) y.checked=false;}); check();});
+      else boxes.forEach(x=>x.onchange=check);
+      ["#bR","#bS","#bE"].forEach(q=>s.querySelector(q).addEventListener("input",check));
+      function gather(){
+        return {t:tSel.value,room:s.querySelector("#bR").value,days:boxes.filter(x=>x.checked).map(x=>+x.value),start:s.querySelector("#bS").value,end:s.querySelector("#bE").value,note:s.querySelector("#bN").value.trim()};
+      }
+      function check(){
+        const g=gather(), w=s.querySelector("#bW"); const msgs=[];
+        if(g.start&&g.end&&toMin(g.end)<=toMin(g.start)) msgs.push("The finish time is before the start time.");
+        else if(g.start&&g.end) g.days.forEach(dd=>{
+          v.blocks.forEach(o=>{
+            if(b&&o.id===b.id) return; if(o.day!==dd) return;
+            if(!(toMin(g.start)<toMin(o.end)&&toMin(o.start)<toMin(g.end))) return;
+            if(o.room===g.room) msgs.push(esc(v.days[dd])+": "+esc(room(g.room)?.name||"")+" already has "+esc(teacher(o.t)?.name||"someone")+" "+fmtRange(o)+".");
+            else if(g.t&&g.t!=="__new"&&o.t===g.t) msgs.push(esc(v.days[dd])+": "+esc(teacher(g.t)?.name||"")+" is already in "+esc(room(o.room)?.name||"")+" "+fmtRange(o)+".");
+          });
+        });
+        w.innerHTML=msgs.slice(0,4).join("<br>")+(msgs.length?"<br>You can still save it; it will show as a clash.":""); w.classList.toggle("show",!!msgs.length);
+      }
+      check();
+      if(tSel.value==="__new") sync();
+      s.querySelector("#bSave").onclick=()=>{
+        const g=gather();
+        if(!g.days.length){toast("Pick a day"); return;}
+        if(!g.start||!g.end||toMin(g.end)<=toMin(g.start)){toast("Check the times"); return;}
+        let tid=g.t;
+        change(()=>{
+          if(tid==="__new"){
+            const nm=s.querySelector("#nTn").value.trim()||"New teacher";
+            const nt={id:uid(),name:nm,inst:s.querySelector("#nTi").value.trim(),color:nextColor(v)}; v.teachers.push(nt); tid=nt.id;
+          }
+          if(b){Object.assign(b,{t:tid,room:g.room,day:g.days[0],start:g.start,end:g.end,note:g.note});}
+          else g.days.forEach(dd=>v.blocks.push({id:uid(),t:tid,room:g.room,day:dd,start:g.start,end:g.end,note:g.note}));
+          v._lastT=tid;
+        });
+        lastTimes={start:g.start,end:g.end};
+        closeSheet(); if(!b&&g.days.length>1) toast("Added "+g.days.length+" bookings");
+      };
+      if(b){
+        s.querySelector("#bDel").onclick=()=>{change(()=>{v.blocks=v.blocks.filter(x=>x.id!==b.id);}); closeSheet(); toast("Deleted. Undo is up top.");};
+        s.querySelector("#bDup").onclick=()=>{closeSheet(); editBlock(null,{t:b.t,room:b.room,day:b.day,start:b.start,end:b.end});};
+      } else s.querySelector("#bCancel").onclick=closeSheet;
+      enterSubmits(s,"#bSave");
+    });
+}
+function nextColor(v){const used=v.teachers.map(t=>t.color); return PALETTE.find(c=>!used.includes(c))||PALETTE[v.teachers.length%PALETTE.length];}
+
+function editTeacher(id,afterNew){
+  const v=cur(); const t=id?teacher(id):null;
+  const d=t?{...t}:{name:"",inst:"",color:nextColor(v)};
+  const count=t?v.blocks.filter(b=>b.t===t.id).length:0;
+  openSheet(
+    '<h2>'+(t?"Teacher":"New teacher")+'</h2><div class="where">'+(t?count+" booking"+(count===1?"":"s")+" this week":"Add as many as you need, one at a time")+'</div>'+
+    '<label class="f"><span>Name</span><input id="tN" value="'+esc(d.name)+'" placeholder="Full name" autofocus></label>'+
+    '<label class="f"><span>Instrument or area</span><input id="tI" value="'+esc(d.inst)+'" placeholder="Violin, Clarinet, Percussion"></label>'+
+    '<div class="f"><span>Colour</span><div class="swatches" id="tC">'+PALETTE.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===d.color?"on":"")+'" style="background:'+c+'" aria-label="Colour"></button>').join("")+'</div></div>'+
+    '<div class="row-btns">'+(t?'<button class="sbtn danger" id="tDel">Delete</button>':'<button class="sbtn" id="tCancel">Cancel</button>')+
+      (!t?'<button class="sbtn" id="tAnother">Save and add another</button>':'')+'<button class="sbtn primary" id="tSave">Save</button></div>',
+    s=>{
+      let color=d.color;
+      s.querySelectorAll("#tC button").forEach(bt=>bt.onclick=()=>{color=bt.dataset.c; s.querySelectorAll("#tC button").forEach(x=>x.classList.toggle("on",x===bt));});
+      const doSave=()=>{
+        const name=s.querySelector("#tN").value.trim(); if(!name){toast("Add a name"); return false;}
+        const inst=s.querySelector("#tI").value.trim();
+        change(()=>{if(t) Object.assign(t,{name,inst,color}); else v.teachers.push({id:uid(),name,inst,color});});
+        return true;
+      };
+      s.querySelector("#tSave").onclick=()=>{if(doSave()){closeSheet(); if(afterNew) manageTeachers();}};
+      if(!t){
+        s.querySelector("#tCancel").onclick=()=>{closeSheet(); if(afterNew) manageTeachers();};
+        s.querySelector("#tAnother").onclick=()=>{if(doSave()){toast("Saved"); editTeacher(null,afterNew);}};
+      } else s.querySelector("#tDel").onclick=()=>{
+        if(count&&!confirm("Delete "+t.name+" and their "+count+" booking"+(count===1?"":"s")+"?")) return;
+        change(()=>{v.teachers=v.teachers.filter(x=>x.id!==t.id); v.blocks=v.blocks.filter(b=>b.t!==t.id);}); closeSheet(); toast("Deleted. Undo is up top.");
+      };
+      enterSubmits(s,t?"#tSave":"#tAnother");
+    });
+}
+function manageTeachers(startNew){
+  const v=cur();
+  if(startNew&&!v.teachers.length){editTeacher(null,true); return;}
+  openSheet(
+    '<h2>Teachers</h2><div class="where">'+v.teachers.length+' IMSS teacher'+(v.teachers.length===1?"":"s")+' in this occasion</div>'+
+    '<ul class="list">'+v.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<li><span class="sw" style="background:'+t.color+'"></span><div class="nm"><b>'+esc(t.name)+'</b><small>'+esc(t.inst||"")+'</small></div><button class="sbtn" data-et="'+t.id+'">Edit</button></li>').join("")+'</ul>'+
+    '<div class="row-btns"><button class="sbtn" id="mtAdd">+ Add teacher</button><button class="sbtn primary" id="mtDone">Done</button></div>',
+    s=>{
+      s.querySelector("#mtDone").onclick=closeSheet;
+      s.querySelector("#mtAdd").onclick=()=>editTeacher(null,true);
+      s.querySelectorAll("[data-et]").forEach(b=>b.onclick=()=>editTeacher(b.dataset.et));
+    });
+}
+function editRoom(id){
+  const v=cur(), i=v.rooms.findIndex(r=>r.id===id), r=v.rooms[i];
+  const count=v.blocks.filter(b=>b.room===id).length;
+  openSheet(
+    '<h2>Room</h2><div class="where">'+count+' booking'+(count===1?"":"s")+' this week</div>'+
+    '<label class="f"><span>Name</span><input id="rN" value="'+esc(r.name)+'" autofocus></label>'+
+    '<div class="row-btns"><button class="sbtn" id="rUp"'+(i===0?" disabled":"")+'>Move up</button><button class="sbtn" id="rDown"'+(i===v.rooms.length-1?" disabled":"")+'>Move down</button><button class="sbtn primary" id="rSave">Save</button></div>'+
+    '<div class="row-btns"><button class="sbtn" id="rAdd">Add a room after</button><button class="sbtn danger" id="rDel"'+(v.rooms.length<2?" disabled":"")+'>Delete room</button></div>',
+    s=>{
+      s.querySelector("#rSave").onclick=()=>{const n=s.querySelector("#rN").value.trim(); if(n) change(()=>{r.name=n;}); closeSheet();};
+      const mv=dir=>{const j=i+dir; change(()=>{[v.rooms[i],v.rooms[j]]=[v.rooms[j],v.rooms[i]];}); closeSheet();};
+      s.querySelector("#rUp").onclick=()=>mv(-1); s.querySelector("#rDown").onclick=()=>mv(1);
+      s.querySelector("#rAdd").onclick=()=>{const nr={id:uid(),name:"New room"}; change(()=>{v.rooms.splice(i+1,0,nr);}); closeSheet(); editRoom(nr.id);};
+      s.querySelector("#rDel").onclick=()=>{
+        if(count&&!confirm("Delete "+r.name+" and its "+count+" booking"+(count===1?"":"s")+"?")) return;
+        change(()=>{v.rooms.splice(i,1); v.blocks=v.blocks.filter(b=>b.room!==id);}); closeSheet(); toast("Deleted. Undo is up top.");
+      };
+      enterSubmits(s,"#rSave");
+    });
+}
+function editDay(d){
+  const v=cur();
+  openSheet(
+    '<h2>Day</h2><div class="where">Rename for an occasion, e.g. "Mon 3 Nov"</div>'+
+    '<label class="f"><span>Heading</span><input id="dN" value="'+esc(v.days[d])+'" autofocus></label>'+
+    '<div class="row-btns"><button class="sbtn" id="dClr">Clear this day</button><button class="sbtn primary" id="dSave">Save</button></div>',
+    s=>{
+      s.querySelector("#dSave").onclick=()=>{const n=s.querySelector("#dN").value.trim(); if(n) change(()=>{v.days[d]=n;}); closeSheet();};
+      s.querySelector("#dClr").onclick=()=>{const n=v.blocks.filter(b=>b.day===d).length; if(n&&!confirm("Remove all "+n+" bookings on "+v.days[d]+"?")) return; change(()=>{v.blocks=v.blocks.filter(b=>b.day!==d);}); closeSheet();};
+      enterSubmits(s,"#dSave");
+    });
+}
+function newOccasion(){
+  const v=cur();
+  openSheet(
+    '<h2>New occasion</h2><div class="where">Term 1 2027, exam week, concert week, room works</div>'+
+    '<label class="f"><span>Name</span><input id="nN" placeholder="e.g. Term 1 2027" autofocus></label>'+
+    '<label class="f"><span>Start from</span><select id="nFrom">'+
+      '<option value="dup">A copy of "'+esc(v.name)+'"</option>'+
+      '<option value="people">Same teachers and rooms, no bookings</option>'+
+      '<option value="fresh">Fresh: the 12 rooms, no teachers</option></select></label>'+
+    '<div class="row-btns"><button class="sbtn" id="nCancel">Cancel</button><button class="sbtn primary" id="nGo">Create</button></div>',
+    s=>{
+      s.querySelector("#nCancel").onclick=closeSheet;
+      s.querySelector("#nGo").onclick=()=>{
+        const name=s.querySelector("#nN").value.trim()||"Untitled occasion", from=s.querySelector("#nFrom").value;
+        let nv;
+        if(from==="fresh"){nv=seed(); nv.title=v.title;}
+        else{nv=JSON.parse(JSON.stringify(v)); nv.id=uid(); if(from==="people") nv.blocks=[];}
+        nv.name=name; nv.sub=""; nv.updated=Date.now();
+        change(()=>{state.versions.push(nv); state.current=nv.id;}); closeSheet(); toast("Created "+name);
+      };
+      enterSubmits(s,"#nGo");
+    });
+}
+function manageOccasions(){
+  const fd=t=>new Date(t).toLocaleDateString("en-AU",{day:"numeric",month:"short",year:"numeric"});
+  openSheet(
+    '<h2>Occasions</h2><div class="where">'+state.versions.length+' saved on this device</div>'+
+    '<ul class="list">'+state.versions.map(x=>'<li class="'+(x.id===state.current?"cur":"")+'"><div class="nm"><b>'+esc(x.name)+'</b><small>'+x.blocks.length+' bookings · edited '+fd(x.updated||Date.now())+'</small></div>'+
+      '<button class="sbtn" data-open="'+x.id+'">Open</button><button class="sbtn" data-ren="'+x.id+'">Rename</button><button class="sbtn danger" data-del="'+x.id+'"'+(state.versions.length<2?" disabled":"")+'>Delete</button></li>').join("")+'</ul>'+
+    '<div class="row-btns"><button class="sbtn" id="oNew">+ New occasion</button><button class="sbtn primary" id="oDone">Done</button></div>',
+    s=>{
+      s.querySelector("#oDone").onclick=closeSheet;
+      s.querySelector("#oNew").onclick=newOccasion;
+      s.querySelectorAll("[data-open]").forEach(b=>b.onclick=()=>{state.current=b.dataset.open; save(); render(); closeSheet();});
+      s.querySelectorAll("[data-ren]").forEach(b=>b.onclick=()=>{const x=state.versions.find(y=>y.id===b.dataset.ren); const n=prompt("Rename occasion",x.name); if(n&&n.trim()){change(()=>{x.name=n.trim();}); manageOccasions();}});
+      s.querySelectorAll("[data-del]").forEach(b=>b.onclick=()=>{const x=state.versions.find(y=>y.id===b.dataset.del); if(!confirm('Delete "'+x.name+'"? You can undo straight after.')) return;
+        change(()=>{state.versions=state.versions.filter(y=>y.id!==x.id); if(state.current===x.id) state.current=state.versions[0].id;}); manageOccasions();});
+    });
+}
+function moreMenu(){
+  openSheet(
+    '<h2>More</h2><div class="where">Backups move occasions between your phone and laptop</div>'+
+    '<div class="row-btns" style="margin-top:0">'+
+      '<button class="sbtn" id="mTeach">Manage teachers</button>'+
+      '<button class="sbtn" id="mPrintW">Print the week</button>'+
+      '<button class="sbtn" id="mPrintT">Print teacher sheets</button>'+
+      '<button class="sbtn" id="mCsv">Export bookings as CSV</button>'+
+      '<button class="sbtn" id="mExp">Back up all occasions</button>'+
+      '<button class="sbtn" id="mImp">Import a backup</button>'+
+    '</div><div class="row-btns"><button class="sbtn primary" id="mDone">Done</button></div>',
+    s=>{
+      s.querySelector("#mDone").onclick=closeSheet;
+      s.querySelector("#mTeach").onclick=()=>manageTeachers();
+      s.querySelector("#mPrintW").onclick=()=>{closeSheet(); printView("week");};
+      s.querySelector("#mPrintT").onclick=()=>{closeSheet(); printView("teachers");};
+      s.querySelector("#mCsv").onclick=()=>{download(slug(cur().name)+".csv",toCSV(cur()),"text/csv"); closeSheet();};
+      s.querySelector("#mExp").onclick=()=>{download("imss-rooms-backup-"+stamp()+".json",JSON.stringify({app:"imss-rooms",versions:state.versions},null,1),"application/json"); closeSheet();};
+      s.querySelector("#mImp").onclick=()=>{closeSheet(); document.getElementById("importFile").click();};
+    });
+}
+function printView(vw){
+  const prev=view; view=vw; render();
+  setTimeout(()=>{window.print(); view=prev; render();},150);
+}
+function stamp(){const d=new Date(); return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");}
+function slug(s){return (s||"imss-rooms").toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")||"imss-rooms";}
+function download(name,text,type){const b=new Blob([text],{type}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);}
+function toCSV(v){
+  const q=x=>'"'+String(x||"").replace(/"/g,'""')+'"';
+  const rows=[["Day","Room","Start","Finish","Teacher","Instrument","Note","Clash"].map(q).join(",")];
+  v.blocks.slice().sort((a,b)=>a.day-b.day||v.rooms.findIndex(r=>r.id===a.room)-v.rooms.findIndex(r=>r.id===b.room)||sortBlocks(a,b)).forEach(b=>{
+    const t=teacher(b.t); rows.push([v.days[b.day],room(b.room)?.name,fmt(b.start),fmt(b.end),t?.name,t?.inst,b.note,clashes.map.has(b.id)?"Yes":""].map(q).join(","));
+  });
+  return rows.join("\r\n");
+}
+document.getElementById("importFile").addEventListener("change",e=>{
+  const f=e.target.files[0]; if(!f) return; const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const data=JSON.parse(rd.result); const ok=(Array.isArray(data.versions)?data.versions:[]).filter(x=>x&&Array.isArray(x.rooms)&&Array.isArray(x.blocks)&&Array.isArray(x.teachers));
+      if(!ok.length) throw 0;
+      change(()=>{ok.forEach(x=>{if(state.versions.some(y=>y.id===x.id)) x.id=uid(); state.versions.push(x);}); state.current=ok[ok.length-1].id;});
+      toast("Imported "+ok.length+" occasion"+(ok.length>1?"s":""));
+    }catch(err){toast("That file is not an IMSS Rooms backup");}
+    e.target.value="";
+  };
+  rd.readAsText(f);
+});
+
+/* ---------- wiring ---------- */
+document.addEventListener("click",e=>{
+  if(scrim.contains(e.target)) return;
+  const bEl=e.target.closest("[data-b]"); if(bEl){editBlock(bEl.dataset.b); return;}
+  const add=e.target.closest("[data-cr]"); if(add){editBlock(null,{room:add.dataset.cr,day:+add.dataset.cd}); return;}
+  const col=e.target.closest("[data-col]");
+  if(col){
+    const rect=col.getBoundingClientRect(); const lo=+col.dataset.lo; const m=Math.floor(((e.clientY-rect.top)/1.3+lo)/15)*15;
+    editBlock(null,{room:col.dataset.col,day:dayIdx,start:toHHMM(m),end:toHHMM(m+60)}); return;
+  }
+  const rEl=e.target.closest("[data-room]"); if(rEl){editRoom(rEl.dataset.room); return;}
+  const dEl=e.target.closest("[data-day]"); if(dEl){editDay(+dEl.dataset.day); return;}
+  const tEl=e.target.closest("[data-teacher]"); if(tEl){editTeacher(tEl.dataset.teacher); return;}
+  const at=e.target.closest("[data-addt]"); if(at){editBlock(null,{t:at.dataset.addt}); return;}
+  if(e.target.closest("#tManage")){manageTeachers(); return;}
+  const di=e.target.closest("[data-dayi]"); if(di){dayIdx=+di.dataset.dayi; render(); return;}
+  const tab=e.target.closest(".tab"); if(tab){view=tab.dataset.view; localSet("imss-view",view); render(); return;}
+});
+document.getElementById("tFilter").addEventListener("change",e=>{focusT=e.target.value; render();});
+document.getElementById("occSel").addEventListener("change",e=>{state.current=e.target.value; save(); render();});
+document.getElementById("occBtn").onclick=manageOccasions;
+document.getElementById("addBtn").onclick=()=>{if(!cur().teachers.length) editTeacher(null,true); else editBlock(null);};
+document.getElementById("undoBtn").onclick=undo;
+document.getElementById("printBtn").onclick=()=>printView(view==="day"?"week":view);
+document.getElementById("moreBtn").onclick=moreMenu;
+let tt;
+["ttTitle","ttSub"].forEach(id=>{
+  const el=document.getElementById(id);
+  el.addEventListener("focus",()=>snapshot());
+  el.addEventListener("input",()=>{const v=cur(); if(id==="ttTitle") v.title=el.value; else v.sub=el.value; clearTimeout(tt); tt=setTimeout(save,300);});
+  el.addEventListener("keydown",e=>{if(e.key==="Enter") el.blur();});
+});
+
+render();
+if("serviceWorker" in navigator) window.addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));
+})();
+</script>
+</body>
+</html>
