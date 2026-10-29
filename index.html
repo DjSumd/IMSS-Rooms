@@ -453,7 +453,7 @@ function editBlock(id,pre){
     '<div id="newT" style="display:none" class="two"><label class="f"><span>New teacher name</span><input id="nTn" placeholder="Full name"></label><label class="f"><span>Instrument</span><input id="nTi" placeholder="Violin, Brass, Percussion"></label></div>'+
     '<label class="f"><span>Room</span><select id="bR">'+rOpts+'</select></label>'+
     '<div class="f"><span>'+(b?"Day":"Days")+'</span><div class="days" id="bD">'+dayBoxes+'</div></div>'+
-    '<div class="two"><label class="f"><span>From</span><input type="time" id="bS" step="300" value="'+d.start+'"></label><label class="f"><span>To</span><input type="time" id="bE" step="300" value="'+d.end+'"></label></div>'+
+    '<div class="two"><label class="f"><span>From</span><input type="time" id="bS" step="60" value="'+d.start+'"></label><label class="f"><span>To</span><input type="time" id="bE" step="60" value="'+d.end+'"></label></div>'+
     '<label class="f"><span>Note</span><input id="bN" value="'+esc(d.note)+'" placeholder="Optional, e.g. Week A only, sectional"></label>'+
     '<div class="warn" id="bW"></div>'+
     '<div class="row-btns">'+(b?'<button class="sbtn danger" id="bDel">Delete</button><button class="sbtn" id="bDup">Duplicate</button>':'<button class="sbtn" id="bCancel">Cancel</button>')+'<button class="sbtn primary" id="bSave">Save</button></div>',
@@ -684,7 +684,7 @@ document.addEventListener("click",e=>{
   const add=e.target.closest("[data-cr]"); if(add){editBlock(null,{room:add.dataset.cr,day:+add.dataset.cd}); return;}
   const col=e.target.closest("[data-col]");
   if(col){
-    const rect=col.getBoundingClientRect(); const lo=+col.dataset.lo; const m=Math.floor(((e.clientY-rect.top)/1.3+lo)/15)*15;
+    const rect=col.getBoundingClientRect(); const lo=+col.dataset.lo; const m=Math.floor(((e.clientY-rect.top)/1.3+lo)/5)*5;
     editBlock(null,{room:col.dataset.col,day:dayIdx,start:toHHMM(m),end:toHHMM(m+60)}); return;
   }
   const rEl=e.target.closest("[data-room]"); if(rEl){editRoom(rEl.dataset.room); return;}
