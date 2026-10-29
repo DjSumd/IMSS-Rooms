@@ -255,7 +255,7 @@ table.wk{border-collapse:collapse;width:100%;min-width:980px;table-layout:fixed}
 "use strict";
 const KEY="imss-rooms-v1";
 const PALETTE=["#6e1f24","#a8823a","#3d4a52","#5f7154","#7b5a7e","#2f6f73","#b5652d","#8a3f5f","#4f5d8a","#7a6a3a","#3f7d4f","#9a4c3b","#5a4a42","#2c5a7a","#a35b8c","#6b7a2e"];
-const DEFAULT_ROOMS=["M1.1","M1.2","M1.3","E1.2","PR1","PR3","DH1","DH2","P Building Foyer","Languages Building Foyer","Tricycle Theatre","Tricycle Greenroom"];
+const DEFAULT_ROOMS=["M1.1","M1.2","M1.3","E1.2","PR1","PR3","Percussion Studio","DH1","DH2","P Building Foyer","Languages Building Foyer","Tricycle Theatre","Tricycle Greenroom"];
 const DAYS=["Monday","Tuesday","Wednesday","Thursday","Friday"];
 
 function uid(){return Math.random().toString(36).slice(2,10)+Date.now().toString(36).slice(-4);}
@@ -268,8 +268,22 @@ let state=load(), undoStack=[], view=localGet("imss-view")||"week", dayIdx=defau
 function localGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function localSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function load(){
-  try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&Array.isArray(s.versions)&&s.versions.length) return s;}}catch(e){}
-  const v=seed(); return {versions:[v],current:v.id};
+  try{const raw=localStorage.getItem(KEY); if(raw){const s=JSON.parse(raw); if(s&&Array.isArray(s.versions)&&s.versions.length) return migrate(s);}}catch(e){}
+  const v=seed(); return {versions:[v],current:v.id,migrations:["perc-studio"]};
+}
+/* One-off: add Percussion Studio (after PR3) to occasions saved before it existed */
+function migrate(s){
+  s.migrations=s.migrations||[];
+  if(!s.migrations.includes("perc-studio")){
+    s.versions.forEach(v=>{
+      if(v.rooms.some(r=>r.name.trim().toLowerCase()==="percussion studio")) return;
+      const i=v.rooms.findIndex(r=>r.name==="PR3");
+      v.rooms.splice(i>=0?i+1:v.rooms.length,0,{id:uid(),name:"Percussion Studio"});
+    });
+    s.migrations.push("perc-studio");
+    try{localStorage.setItem(KEY,JSON.stringify(s));}catch(e){}
+  }
+  return s;
 }
 function save(){
   cur().updated=Date.now();
