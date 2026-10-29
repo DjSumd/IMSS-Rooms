@@ -80,6 +80,15 @@ table.wk{border-collapse:collapse;width:100%;min-width:980px;table-layout:fixed}
 .chip.clash{box-shadow:0 0 0 2px var(--clash) inset}
 .chip.clash .tm::after{content:" clash";color:var(--clash);font-weight:600}
 .chip.dim{opacity:.28}
+.kind{display:inline-block;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;border-radius:4px;padding:1px 5px;margin-right:4px;vertical-align:1px}
+.kind.ens{background:var(--charcoal);color:#e9c98a}
+.kind.les{background:var(--soft);color:var(--muted)}
+.chip.ens,.dg .blk.ens{background-image:repeating-linear-gradient(135deg,transparent 0 7px,color-mix(in srgb,var(--tc) 10%,transparent) 7px 9px)}
+.seg{display:flex;gap:6px}
+.seg label{flex:1}
+.seg input{display:none}
+.seg span{display:block;text-align:center;padding:9px 4px;border:1px solid var(--line);border-radius:8px;background:var(--bg);font-weight:600;font-size:13px}
+.seg input:checked+span{background:var(--charcoal);border-color:var(--charcoal);color:#e9c98a}
 
 /* Phone week list */
 .wklist{display:none}
@@ -224,6 +233,7 @@ table.wk{border-collapse:collapse;width:100%;min-width:980px;table-layout:fixed}
     <button class="tab" data-view="day">Day by time</button>
     <button class="tab" data-view="teachers">Teachers</button>
     <span class="sp"></span>
+    <select class="filter" id="kFilter" aria-label="Show type"><option value="">Lessons and ensembles</option><option value="les">Lessons only</option><option value="ens">Ensembles only</option></select>
     <select class="filter" id="tFilter" aria-label="Highlight a teacher"></select>
   </div>
   <div class="clashbar" id="clashbar"></div>
@@ -254,7 +264,7 @@ function seed(){
     days:DAYS.slice(),rooms:DEFAULT_ROOMS.map(n=>({id:uid(),name:n})),teachers:[],blocks:[],updated:Date.now()};
 }
 
-let state=load(), undoStack=[], view=localGet("imss-view")||"week", dayIdx=defaultDay(), focusT="";
+let state=load(), undoStack=[], view=localGet("imss-view")||"week", dayIdx=defaultDay(), focusT="", kindF="";
 function localGet(k){try{return localStorage.getItem(k);}catch(e){return null;}}
 function localSet(k,v){try{localStorage.setItem(k,v);}catch(e){}}
 function load(){
@@ -285,6 +295,9 @@ function room(id){return cur().rooms.find(r=>r.id===id);}
 function tColor(id){const t=teacher(id); return t?t.color:"#9a8f84";}
 function esc(s){return String(s==null?"":s).replace(/[&<>"]/g,ch=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[ch]));}
 function toast(t){const el=document.getElementById("toast"); el.textContent=t; el.classList.add("show"); clearTimeout(toast._t); toast._t=setTimeout(()=>el.classList.remove("show"),1900);}
+function isEns(b){return b.kind==="ens";}
+function kindTag(b){return isEns(b)?'<span class="kind ens">Ensemble</span>':'<span class="kind les">Lessons</span>';}
+function typeDim(b){return kindF&&((kindF==="ens")!==isEns(b));}
 function sortBlocks(a,b){return toMin(a.start)-toMin(b.start)||toMin(a.end)-toMin(b.end);}
 
 /* ---------- clashes: same room overlap, or same teacher in two places ---------- */
@@ -317,6 +330,7 @@ function render(){
   if(focusT&&!teacher(focusT)) focusT="";
   tf.innerHTML='<option value="">Highlight a teacher</option>'+v.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name)).map(t=>'<option value="'+t.id+'"'+(t.id===focusT?" selected":"")+'>'+esc(t.name)+'</option>').join("");
   tf.style.display=(view==="teachers"||!v.teachers.length)?"none":"";
+  document.getElementById("kFilter").style.display=(view==="teachers"||!v.blocks.length)?"none":"";
   // clash bar
   const cb=document.getElementById("clashbar");
   if(clashes.list.length){
@@ -348,9 +362,9 @@ function render(){
 function chip(b){
   const t=teacher(b.t), cl=clashes.map.has(b.id), dim=focusT&&b.t!==focusT;
   const showRoom=view==="teachers";
-  return '<button class="chip'+(cl?" clash":"")+(dim?" dim":"")+'" data-b="'+b.id+'" style="--tc:'+tColor(b.t)+'">'+
-    '<div class="tm">'+fmtRange(b)+'</div><div class="who">'+esc(t?t.name:"No teacher")+'</div>'+
-    (t&&t.inst?'<div class="ins">'+esc(t.inst)+'</div>':"")+(b.note?'<div class="nt">'+esc(b.note)+'</div>':"")+(showRoom?esc(room(b.room)?.name||""):"")+'</button>';
+  return '<button class="chip'+(cl?" clash":"")+(dim||typeDim(b)?" dim":"")+(isEns(b)?" ens":"")+'" data-b="'+b.id+'" style="--tc:'+tColor(b.t)+'">'+
+    '<div class="tm">'+kindTag(b)+fmtRange(b)+'</div>'+(isEns(b)&&b.ens?'<div class="who">'+esc(b.ens)+'</div><div class="ins">'+esc(t?t.name:"No teacher")+'</div>':'<div class="who">'+esc(t?t.name:"No teacher")+'</div>')+
+    (t&&t.inst&&!(isEns(b)&&b.ens)?'<div class="ins">'+esc(t.inst)+'</div>':"")+(b.note?'<div class="nt">'+esc(b.note)+'</div>':"")+(showRoom?esc(room(b.room)?.name||""):"")+'</button>';
 }
 function weekHTML(v){
   let h='<div class="wrap week"><table class="wk"><thead><tr><th>Room</th>'+v.days.map((d,i)=>'<th data-day="'+i+'">'+esc(d)+'</th>').join("")+'</tr></thead><tbody>';
@@ -392,8 +406,8 @@ function dayHTML(v){
     h+='<div class="col" data-col="'+r.id+'" data-lo="'+lo+'" style="height:'+H+'px">'+lines+
       bs.filter(b=>b.room===r.id).map(b=>{
         const t=teacher(b.t), top=(toMin(b.start)-lo)*PPM, ht=Math.max(18,(toMin(b.end)-toMin(b.start))*PPM-2);
-        const dim=focusT&&b.t!==focusT?";opacity:.28":"";
-        return '<button class="blk'+(clashes.map.has(b.id)?" clash":"")+'" data-b="'+b.id+'" style="top:'+top+'px;height:'+ht+'px;--tc:'+tColor(b.t)+dim+'"><b>'+esc(t?t.name:"No teacher")+'</b><span>'+fmtRange(b)+(t&&t.inst?" · "+esc(t.inst):"")+'</span></button>';
+        const dim=(focusT&&b.t!==focusT)||typeDim(b)?";opacity:.28":"";
+        return '<button class="blk'+(clashes.map.has(b.id)?" clash":"")+(isEns(b)?" ens":"")+'" data-b="'+b.id+'" style="top:'+top+'px;height:'+ht+'px;--tc:'+tColor(b.t)+dim+'"><span>'+kindTag(b)+'</span><b>'+esc(isEns(b)&&b.ens?b.ens:(t?t.name:"No teacher"))+'</b><span>'+fmtRange(b)+(isEns(b)&&b.ens?" · "+esc(t?t.name:""):(t&&t.inst?" · "+esc(t.inst):""))+'</span></button>';
       }).join("")+'</div>';
   });
   return h+'</div></div>';
@@ -403,9 +417,11 @@ function teachersHTML(v){
   const ts=v.teachers.slice().sort((a,b)=>a.name.localeCompare(b.name));
   return '<div class="row-btns" style="margin:0 0 10px"><button class="sbtn" id="tManage">Manage teachers</button></div><div class="tgrid">'+ts.map(t=>{
     const bs=v.blocks.filter(b=>b.t===t.id).sort((a,b)=>a.day-b.day||sortBlocks(a,b));
-    const mins=bs.reduce((s,b)=>s+Math.max(0,toMin(b.end)-toMin(b.start)),0);
-    return '<div class="tcard" style="--tc:'+t.color+'"><h3 data-teacher="'+t.id+'">'+esc(t.name)+'<small>'+(mins?hours(mins)+" a week":"")+'</small></h3><div class="ins">'+esc(t.inst||"")+'</div>'+
-      (bs.length?bs.map(b=>'<div class="ln'+(clashes.map.has(b.id)?" clash":"")+'" data-b="'+b.id+'"><span class="d">'+esc((v.days[b.day]||"").slice(0,3))+'</span><span class="t">'+fmtRange(b)+'</span><span>'+esc(room(b.room)?.name||"")+(b.note?" <i style=\"color:var(--muted)\">"+esc(b.note)+"</i>":"")+'</span></div>').join(""):'<div class="none">No rooms booked</div>')+
+    const dur=b=>Math.max(0,toMin(b.end)-toMin(b.start));
+    const mins=bs.reduce((s,b)=>s+dur(b),0), eMin=bs.filter(isEns).reduce((s,b)=>s+dur(b),0);
+    const split=mins?(eMin?hours(mins-eMin)+" lessons, "+hours(eMin)+" ensemble":hours(mins)+" lessons"):"";
+    return '<div class="tcard" style="--tc:'+t.color+'"><h3 data-teacher="'+t.id+'">'+esc(t.name)+'<small>'+(mins?hours(mins)+" a week":"")+'</small></h3><div class="ins">'+esc(t.inst||"")+(split?" · "+split:"")+'</div>'+
+      (bs.length?bs.map(b=>'<div class="ln'+(clashes.map.has(b.id)?" clash":"")+'" data-b="'+b.id+'"><span class="d">'+esc((v.days[b.day]||"").slice(0,3))+'</span><span class="t">'+fmtRange(b)+'</span><span>'+esc(room(b.room)?.name||"")+(isEns(b)?' <span class="kind ens">'+esc(b.ens||"Ensemble")+'</span>':"")+(b.note?" <i style=\"color:var(--muted)\">"+esc(b.note)+"</i>":"")+'</span></div>').join(""):'<div class="none">No rooms booked</div>')+
       '<button class="addline" data-addt="'+t.id+'">+ Add a booking for '+esc(t.name.split(" ")[0])+'</button></div>';
   }).join("")+'</div>';
 }
@@ -424,22 +440,28 @@ function enterSubmits(s,btn){s.querySelectorAll("input").forEach(i=>i.addEventLi
 let lastTimes={start:"08:30",end:"12:30"};
 function editBlock(id,pre){
   const v=cur(); const b=id?v.blocks.find(x=>x.id===id):null;
-  const d=b?{...b}:{id:null,t:(pre&&pre.t)||v._lastT||"",room:(pre&&pre.room)||v.rooms[0]?.id,day:(pre&&pre.day!=null)?pre.day:dayIdx,start:(pre&&pre.start)||lastTimes.start,end:(pre&&pre.end)||lastTimes.end,note:""};
+  const d=b?{...b}:{id:null,t:(pre&&pre.t)||v._lastT||"",room:(pre&&pre.room)||v.rooms[0]?.id,day:(pre&&pre.day!=null)?pre.day:dayIdx,start:(pre&&pre.start)||lastTimes.start,end:(pre&&pre.end)||lastTimes.end,note:"",kind:(pre&&pre.kind)||"les",ens:(pre&&pre.ens)||""};
+  if(!d.kind) d.kind="les";
   const tOpts='<option value="">Choose a teacher</option>'+v.teachers.slice().sort((a,c)=>a.name.localeCompare(c.name)).map(t=>'<option value="'+t.id+'"'+(t.id===d.t?" selected":"")+'>'+esc(t.name)+(t.inst?" ("+esc(t.inst)+")":"")+'</option>').join("")+'<option value="__new">+ New teacher</option>';
   const rOpts=v.rooms.map(r=>'<option value="'+r.id+'"'+(r.id===d.room?" selected":"")+'>'+esc(r.name)+'</option>').join("");
   const dayBoxes=v.days.map((dn,i)=>'<label><input type="checkbox" value="'+i+'"'+(i===d.day?" checked":"")+'><span>'+esc(dn.slice(0,3))+'</span></label>').join("");
   openSheet(
     '<h2>'+(b?"Edit booking":"New booking")+'</h2><div class="where">'+(b?esc(v.days[b.day])+" · "+esc(room(b.room)?.name||""):"Pick more than one day to book the same slot across the week")+'</div>'+
-    '<label class="f"><span>Teacher</span><select id="bT">'+tOpts+'</select></label>'+
+    '<div class="f"><span>Type</span><div class="seg"><label><input type="radio" name="bK" value="les"'+(d.kind!=="ens"?" checked":"")+'><span>Lessons</span></label><label><input type="radio" name="bK" value="ens"'+(d.kind==="ens"?" checked":"")+'><span>Ensemble</span></label></div></div>'+
+    '<label class="f" id="ensWrap"><span>Ensemble</span><input id="bEns" value="'+esc(d.ens||"")+'" list="ensList" placeholder="e.g. Concert Band 3, Senior Strings"><datalist id="ensList">'+[...new Set(v.blocks.filter(isEns).map(x=>x.ens).filter(Boolean))].sort().map(n=>'<option value="'+esc(n)+'">').join("")+'</datalist></label>'+
+    '<label class="f"><span id="bTlab">Teacher</span><select id="bT">'+tOpts+'</select></label>'+
     '<div id="newT" style="display:none" class="two"><label class="f"><span>New teacher name</span><input id="nTn" placeholder="Full name"></label><label class="f"><span>Instrument</span><input id="nTi" placeholder="Violin, Brass, Percussion"></label></div>'+
     '<label class="f"><span>Room</span><select id="bR">'+rOpts+'</select></label>'+
     '<div class="f"><span>'+(b?"Day":"Days")+'</span><div class="days" id="bD">'+dayBoxes+'</div></div>'+
     '<div class="two"><label class="f"><span>From</span><input type="time" id="bS" step="300" value="'+d.start+'"></label><label class="f"><span>To</span><input type="time" id="bE" step="300" value="'+d.end+'"></label></div>'+
-    '<label class="f"><span>Note</span><input id="bN" value="'+esc(d.note)+'" placeholder="Optional, e.g. ensemble rehearsal, Week A only"></label>'+
+    '<label class="f"><span>Note</span><input id="bN" value="'+esc(d.note)+'" placeholder="Optional, e.g. Week A only, sectional"></label>'+
     '<div class="warn" id="bW"></div>'+
     '<div class="row-btns">'+(b?'<button class="sbtn danger" id="bDel">Delete</button><button class="sbtn" id="bDup">Duplicate</button>':'<button class="sbtn" id="bCancel">Cancel</button>')+'<button class="sbtn primary" id="bSave">Save</button></div>',
     s=>{
       const tSel=s.querySelector("#bT"), newT=s.querySelector("#newT");
+      const kindNow=()=>s.querySelector('input[name="bK"]:checked').value;
+      const syncKind=()=>{const e=kindNow()==="ens"; s.querySelector("#ensWrap").style.display=e?"":"none"; s.querySelector("#bTlab").textContent=e?"Director or tutor":"Teacher";};
+      s.querySelectorAll('input[name="bK"]').forEach(x=>x.onchange=syncKind); syncKind();
       const sync=()=>{newT.style.display=tSel.value==="__new"?"grid":"none"; check();};
       tSel.onchange=sync;
       const boxes=[...s.querySelectorAll("#bD input")];
@@ -447,7 +469,7 @@ function editBlock(id,pre){
       else boxes.forEach(x=>x.onchange=check);
       ["#bR","#bS","#bE"].forEach(q=>s.querySelector(q).addEventListener("input",check));
       function gather(){
-        return {t:tSel.value,room:s.querySelector("#bR").value,days:boxes.filter(x=>x.checked).map(x=>+x.value),start:s.querySelector("#bS").value,end:s.querySelector("#bE").value,note:s.querySelector("#bN").value.trim()};
+        return {t:tSel.value,room:s.querySelector("#bR").value,days:boxes.filter(x=>x.checked).map(x=>+x.value),start:s.querySelector("#bS").value,end:s.querySelector("#bE").value,note:s.querySelector("#bN").value.trim(),kind:kindNow(),ens:kindNow()==="ens"?s.querySelector("#bEns").value.trim():""};
       }
       function check(){
         const g=gather(), w=s.querySelector("#bW"); const msgs=[];
@@ -474,8 +496,8 @@ function editBlock(id,pre){
             const nm=s.querySelector("#nTn").value.trim()||"New teacher";
             const nt={id:uid(),name:nm,inst:s.querySelector("#nTi").value.trim(),color:nextColor(v)}; v.teachers.push(nt); tid=nt.id;
           }
-          if(b){Object.assign(b,{t:tid,room:g.room,day:g.days[0],start:g.start,end:g.end,note:g.note});}
-          else g.days.forEach(dd=>v.blocks.push({id:uid(),t:tid,room:g.room,day:dd,start:g.start,end:g.end,note:g.note}));
+          if(b){Object.assign(b,{t:tid,room:g.room,day:g.days[0],start:g.start,end:g.end,note:g.note,kind:g.kind,ens:g.ens});}
+          else g.days.forEach(dd=>v.blocks.push({id:uid(),t:tid,room:g.room,day:dd,start:g.start,end:g.end,note:g.note,kind:g.kind,ens:g.ens}));
           v._lastT=tid;
         });
         lastTimes={start:g.start,end:g.end};
@@ -483,7 +505,7 @@ function editBlock(id,pre){
       };
       if(b){
         s.querySelector("#bDel").onclick=()=>{change(()=>{v.blocks=v.blocks.filter(x=>x.id!==b.id);}); closeSheet(); toast("Deleted. Undo is up top.");};
-        s.querySelector("#bDup").onclick=()=>{closeSheet(); editBlock(null,{t:b.t,room:b.room,day:b.day,start:b.start,end:b.end});};
+        s.querySelector("#bDup").onclick=()=>{closeSheet(); editBlock(null,{t:b.t,room:b.room,day:b.day,start:b.start,end:b.end,kind:b.kind,ens:b.ens});};
       } else s.querySelector("#bCancel").onclick=closeSheet;
       enterSubmits(s,"#bSave");
     });
@@ -635,9 +657,9 @@ function slug(s){return (s||"imss-rooms").toLowerCase().replace(/[^a-z0-9]+/g,"-
 function download(name,text,type){const b=new Blob([text],{type}); const a=document.createElement("a"); a.href=URL.createObjectURL(b); a.download=name; document.body.appendChild(a); a.click(); setTimeout(()=>{URL.revokeObjectURL(a.href); a.remove();},500);}
 function toCSV(v){
   const q=x=>'"'+String(x||"").replace(/"/g,'""')+'"';
-  const rows=[["Day","Room","Start","Finish","Teacher","Instrument","Note","Clash"].map(q).join(",")];
+  const rows=[["Day","Room","Start","Finish","Type","Ensemble","Teacher","Instrument","Note","Clash"].map(q).join(",")];
   v.blocks.slice().sort((a,b)=>a.day-b.day||v.rooms.findIndex(r=>r.id===a.room)-v.rooms.findIndex(r=>r.id===b.room)||sortBlocks(a,b)).forEach(b=>{
-    const t=teacher(b.t); rows.push([v.days[b.day],room(b.room)?.name,fmt(b.start),fmt(b.end),t?.name,t?.inst,b.note,clashes.map.has(b.id)?"Yes":""].map(q).join(","));
+    const t=teacher(b.t); rows.push([v.days[b.day],room(b.room)?.name,fmt(b.start),fmt(b.end),isEns(b)?"Ensemble":"Lessons",b.ens,t?.name,t?.inst,b.note,clashes.map.has(b.id)?"Yes":""].map(q).join(","));
   });
   return rows.join("\r\n");
 }
@@ -674,6 +696,7 @@ document.addEventListener("click",e=>{
   const tab=e.target.closest(".tab"); if(tab){view=tab.dataset.view; localSet("imss-view",view); render(); return;}
 });
 document.getElementById("tFilter").addEventListener("change",e=>{focusT=e.target.value; render();});
+document.getElementById("kFilter").addEventListener("change",e=>{kindF=e.target.value; render();});
 document.getElementById("occSel").addEventListener("change",e=>{state.current=e.target.value; save(); render();});
 document.getElementById("occBtn").onclick=manageOccasions;
 document.getElementById("addBtn").onclick=()=>{if(!cur().teachers.length) editTeacher(null,true); else editBlock(null);};
